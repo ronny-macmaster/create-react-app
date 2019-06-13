@@ -5,9 +5,9 @@ import AppBar from 'components/AppBar';
 
 export default function Layout({ children }) {
   return (
-    <React.Fragment>
+    <Box display="inline-block">
       <AppBar />
       <Box p={1}>{children}</Box>
-    </React.Fragment>
+    </Box>
   );
 }
