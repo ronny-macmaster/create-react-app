@@ -5,7 +5,7 @@ import AppBar from 'components/AppBar';
 
 export default function Layout({ children }) {
   return (
-    <Box display="inline-block">
+    <Box minWidth="fit-content">
       <AppBar />
       <Box p={1}>{children}</Box>
     </Box>
