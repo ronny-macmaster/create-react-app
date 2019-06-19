@@ -89,6 +89,7 @@ module.exports = function(
   const useYarn = fs.existsSync(path.join(appPath, 'yarn.lock'));
 
   const customScripts = {
+    deploy: 'gh-pages -d build',
     prettier: 'prettier --write src/**/*.js',
   };
 
@@ -103,6 +104,7 @@ module.exports = function(
   ];
 
   const customDevDependencies = [
+    'gh-pages',
     'prettier',
   ];
 
