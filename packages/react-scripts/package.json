@@ -4,7 +4,7 @@
   "description": "Ronny's custom fork of creat-react-app.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ronny-macmaster/create-react-app.git",
+    "url": "https://github.com/ronny-macmaster/macmaster-cra.git",
     "directory": "packages/react-scripts"
   },
   "license": "MIT",
@@ -12,7 +12,7 @@
     "node": ">=8.10"
   },
   "bugs": {
-    "url": "https://github.com/ronny-macmaster/create-react-app/issues"
+    "url": "https://github.com/ronny-macmaster/macmaster-cra/issues"
   },
   "files": [
     "bin",
