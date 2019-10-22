@@ -88,10 +88,19 @@ module.exports = function(
   const appPackage = require(path.join(appPath, 'package.json'));
   const useYarn = fs.existsSync(path.join(appPath, 'yarn.lock'));
 
-  // Copy over some of the devDependencies
-  appPackage.dependencies = appPackage.dependencies || {};
+  const customScripts = {
+    deploy: 'gh-pages -d build',
+    prettier: 'prettier --write src/**/*.js',
+  };
 
-  const useTypeScript = appPackage.dependencies['typescript'] != null;
+  const customDependencies = [
+    'styled-components',
+  ];
+
+  const customDevDependencies = [
+    'gh-pages',
+    'prettier',
+  ];
 
   // Setup the script rules
   appPackage.scripts = {
@@ -99,6 +108,16 @@ module.exports = function(
     build: 'react-scripts build',
     test: 'react-scripts test',
     eject: 'react-scripts eject',
+    ...customScripts,
+  };
+
+  // Copy over some of the devDependencies
+  appPackage.dependencies = appPackage.dependencies || {};
+  appPackage.devDependencies = appPackage.devDependencies || {};
+
+  // Setup the prettier config
+  appPackage.prettier = {
+    singleQuote: true,
   };
 
   // Setup the eslint config
@@ -121,6 +140,8 @@ module.exports = function(
       path.join(appPath, 'README.old.md')
     );
   }
+
+  const useTypeScript = appPackage.dependencies['typescript'] != null;
 
   // Copy the files for the user
   const templatePath = template
