@@ -220,18 +220,39 @@ module.exports = function(
     fs.unlinkSync(templateDependenciesPath);
   }
 
-  // Install react and react-dom for backward compatibility with old CRA cli
-  // which doesn't install react and react-dom along with react-scripts
-  // or template is presetend (via --internal-testing-template)
-  if (!isReactInstalled(appPackage) || template) {
-    console.log(`Installing react and react-dom using ${command}...`);
-    console.log();
+  function packageInstall({ packages = [], saveDev = false }) {
+    let { command, args } = useYarn ? ({
+      command: 'yarnpkg',
+      args: ['add', ...packages],
+    }) : ({
+      command: 'npm',
+      args: ['install', saveDev && '--save-dev', verbose && '--verbose', ...packages].filter(e => e),
+    });
 
     const proc = spawn.sync(command, args, { stdio: 'inherit' });
     if (proc.status !== 0) {
       console.error(`\`${command} ${args.join(' ')}\` failed`);
-      return;
     }
+  }
+
+  // Install react and react-dom for backward compatibility with old CRA cli
+  // which doesn't install react and react-dom along with react-scripts
+  // or template is presetend (via --internal-testing-template)
+  if (!isReactInstalled(appPackage) || template) {
+    console.log('Installing react and react-dom');
+    packageInstall({ packages: ['react', 'react-dom'] });
+  }
+
+  // Install custom dependenices
+  if (customDependencies.length > 0) {
+    console.log('Installing custom dependencies: ', customDependencies);
+    packageInstall({ packages: customDependencies });
+  }
+
+  // Install custom dev dependencies
+  if (customDevDependencies.length > 0) {
+    console.log('Installing custom dev dependencies: ', customDevDependencies);
+    packageInstall({ packages: customDevDependencies, saveDev: true });
   }
 
   if (useTypeScript) {
