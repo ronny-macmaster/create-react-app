@@ -88,17 +88,36 @@ module.exports = function(
   const appPackage = require(path.join(appPath, 'package.json'));
   const useYarn = fs.existsSync(path.join(appPath, 'yarn.lock'));
 
-  // Copy over some of the devDependencies
-  appPackage.dependencies = appPackage.dependencies || {};
+  const customScripts = {
+    deploy: 'gh-pages -d build',
+    prettier: 'prettier --write src/**/*.js',
+  };
 
-  const useTypeScript = appPackage.dependencies['typescript'] != null;
+  const customDependencies = [
+    'react-router-dom',
+    'styled-components',
+  ];
+
+  const customDevDependencies = [
+    'gh-pages',
+    'prettier',
+  ];
 
   // Setup the script rules
   appPackage.scripts = {
     start: 'react-scripts start',
     build: 'react-scripts build',
-    test: 'react-scripts test',
     eject: 'react-scripts eject',
+    ...customScripts,
+  };
+
+  // Copy over some of the devDependencies
+  appPackage.dependencies = appPackage.dependencies || {};
+  appPackage.devDependencies = appPackage.devDependencies || {};
+
+  // Setup the prettier config
+  appPackage.prettier = {
+    singleQuote: true,
   };
 
   // Setup the eslint config
@@ -121,6 +140,8 @@ module.exports = function(
       path.join(appPath, 'README.old.md')
     );
   }
+
+  const useTypeScript = appPackage.dependencies['typescript'] != null;
 
   // Copy the files for the user
   const templatePath = template
@@ -199,18 +220,39 @@ module.exports = function(
     fs.unlinkSync(templateDependenciesPath);
   }
 
-  // Install react and react-dom for backward compatibility with old CRA cli
-  // which doesn't install react and react-dom along with react-scripts
-  // or template is presetend (via --internal-testing-template)
-  if (!isReactInstalled(appPackage) || template) {
-    console.log(`Installing react and react-dom using ${command}...`);
-    console.log();
+  function packageInstall({ packages = [], saveDev = false }) {
+    let { command, args } = useYarn ? ({
+      command: 'yarnpkg',
+      args: ['add', ...packages],
+    }) : ({
+      command: 'npm',
+      args: ['install', saveDev && '--save-dev', verbose && '--verbose', ...packages].filter(e => e),
+    });
 
     const proc = spawn.sync(command, args, { stdio: 'inherit' });
     if (proc.status !== 0) {
       console.error(`\`${command} ${args.join(' ')}\` failed`);
-      return;
     }
+  }
+
+  // Install react and react-dom for backward compatibility with old CRA cli
+  // which doesn't install react and react-dom along with react-scripts
+  // or template is presetend (via --internal-testing-template)
+  if (!isReactInstalled(appPackage) || template) {
+    console.log('Installing react and react-dom');
+    packageInstall({ packages: ['react', 'react-dom'] });
+  }
+
+  // Install custom dependenices
+  if (customDependencies.length > 0) {
+    console.log('Installing custom dependencies: ', customDependencies);
+    packageInstall({ packages: customDependencies });
+  }
+
+  // Install custom dev dependencies
+  if (customDevDependencies.length > 0) {
+    console.log('Installing custom dev dependencies: ', customDevDependencies);
+    packageInstall({ packages: customDevDependencies, saveDev: true });
   }
 
   if (useTypeScript) {
