@@ -94,6 +94,7 @@ module.exports = function(
   };
 
   const customDependencies = [
+    'react-router-dom',
     'styled-components',
   ];
 
@@ -106,7 +107,6 @@ module.exports = function(
   appPackage.scripts = {
     start: 'react-scripts start',
     build: 'react-scripts build',
-    test: 'react-scripts test',
     eject: 'react-scripts eject',
     ...customScripts,
   };
