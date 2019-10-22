@@ -88,25 +88,10 @@ module.exports = function(
   const appPackage = require(path.join(appPath, 'package.json'));
   const useYarn = fs.existsSync(path.join(appPath, 'yarn.lock'));
 
-  const customScripts = {
-    deploy: 'gh-pages -d build',
-    prettier: 'prettier --write src/**/*.js',
-  };
+  // Copy over some of the devDependencies
+  appPackage.dependencies = appPackage.dependencies || {};
 
-  const customDependencies = [
-    '@material-ui/core',
-    '@material-ui/icons',
-    '@material-ui/styles',
-    'react-router-dom',
-    'react-apollo',
-    'apollo-boost',
-    'graphql',
-  ];
-
-  const customDevDependencies = [
-    'gh-pages',
-    'prettier',
-  ];
+  const useTypeScript = appPackage.dependencies['typescript'] != null;
 
   // Setup the script rules
   appPackage.scripts = {
@@ -114,18 +99,6 @@ module.exports = function(
     build: 'react-scripts build',
     test: 'react-scripts test',
     eject: 'react-scripts eject',
-    ...customScripts,
-  };
-
-  // Copy over some of the devDependencies
-  appPackage.dependencies = appPackage.dependencies || {};
-  appPackage.devDependencies = appPackage.devDependencies || {};
-
-  const useTypeScript = appPackage.dependencies['typescript'] != null;
-
-  // Setup the eslint config
-  appPackage.prettier = {
-    singleQuote: true,
   };
 
   // Setup the eslint config
@@ -199,38 +172,45 @@ module.exports = function(
     }
   }
 
-  function packageInstall({ packages = [], saveDev = false }) {
-    let { command, args } = useYarn ? ({
-      command: 'yarnpkg',
-      args: ['add', ...packages],
-    }) : ({
-      command: 'npm',
-      args: ['install', saveDev && '--save-dev', verbose && '--verbose', ...packages].filter(e => e),
-    });
+  let command;
+  let args;
 
-    const proc = spawn.sync(command, args, { stdio: 'inherit' });
-    if (proc.status !== 0) {
-      console.error(`\`${command} ${args.join(' ')}\` failed`);
-    }
+  if (useYarn) {
+    command = 'yarnpkg';
+    args = ['add'];
+  } else {
+    command = 'npm';
+    args = ['install', '--save', verbose && '--verbose'].filter(e => e);
+  }
+  args.push('react', 'react-dom');
+
+  // Install additional template dependencies, if present
+  const templateDependenciesPath = path.join(
+    appPath,
+    '.template.dependencies.json'
+  );
+  if (fs.existsSync(templateDependenciesPath)) {
+    const templateDependencies = require(templateDependenciesPath).dependencies;
+    args = args.concat(
+      Object.keys(templateDependencies).map(key => {
+        return `${key}@${templateDependencies[key]}`;
+      })
+    );
+    fs.unlinkSync(templateDependenciesPath);
   }
 
   // Install react and react-dom for backward compatibility with old CRA cli
   // which doesn't install react and react-dom along with react-scripts
   // or template is presetend (via --internal-testing-template)
   if (!isReactInstalled(appPackage) || template) {
-    packageInstall({ packages: ['react', 'react-dom'] });
-  }
+    console.log(`Installing react and react-dom using ${command}...`);
+    console.log();
 
-  // Install custom dependenices
-  if (customDependencies.length > 0) {
-    console.log('Installing custom dependencies: ', customDependencies);
-    packageInstall({ packages: customDependencies });
-  }
-
-  // Install custom dev dependencies
-  if (customDevDependencies.length > 0) {
-    console.log('Installing custom dev dependencies: ', customDevDependencies);
-    packageInstall({ packages: customDevDependencies, saveDev: true });
+    const proc = spawn.sync(command, args, { stdio: 'inherit' });
+    if (proc.status !== 0) {
+      console.error(`\`${command} ${args.join(' ')}\` failed`);
+      return;
+    }
   }
 
   if (useTypeScript) {
